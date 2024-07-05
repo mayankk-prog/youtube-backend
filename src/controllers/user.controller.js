@@ -35,7 +35,6 @@ const generateAccessAndRefreshTokens = async (userId) => {
   }
 };
 
-
 const registerUser = asyncHandler(async (req, res) => {
   const { fullname, email, username, password } = req.body;
   console.log("email:", email);
@@ -165,7 +164,7 @@ const logoutUser = asyncHandler(async(req, res) => {
 const refreshAccessToken= asyncHandler(async (req, res) => {
   const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken
 
-  if(incomingRefreshToken){
+  if(!incomingRefreshToken){
     throw new ApiError(401, "unauthorized request")
   }
 
@@ -205,7 +204,34 @@ const refreshAccessToken= asyncHandler(async (req, res) => {
 
 })
 
+const changeCurrentPassword= asyncHandler(async(req, res) => {
+  const {oldPassword, newPassword} = req.body
+
+  const user = await User.findById(req.user?.id)
+  const isPasswordCorrect = await user.isPasswordCorrect(oldPassword)
+
+  if(!isPasswordCorrect){
+    throw new ApiError(400, "Invalid old Password")
+  }
+
+  user.password= newPassword
+  await user.save({validateBeforeSave: false})
+
+  return res
+  .status(200)
+  .json(new ApiResponse(200, {}, "Password changed successfully"))
+
+})
+
+const getCurrentUser= asyncHandler(async(req, res) => {
+  return res
+  .status(200)
+  .json(200, req.user, "current user fetched successfully")
+})
+
 export { registerUser,
 loginUser,
 logoutUser,
-refreshAccessToken };
+refreshAccessToken,
+changeCurrentPassword,
+getCurrentUser };
